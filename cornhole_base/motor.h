@@ -26,14 +26,16 @@ class motor {
     void setPID(float Kp, float Ki, float Kd);
     void updateOdom();                                  // ISR for encoder
     void angular_speed(float set );                     // Give the motor a speed input
+    bool to_theta(float theta);
+
 
   private:
-    // Motor Comunication ---------------
+    // Motor Comunication --------------------------------------
     int _pwmPin;
     int _dirPin = -1;
     motorComs _coms;
 
-    // Encoder --------------------------
+    // Encoder -------------------------------------------------
     bool _useEncoder = false;
 //    static motor * object;
     int _chA;
@@ -47,12 +49,12 @@ class motor {
 //    static void callBackGlue();
     
     
-    // Velocity Ram ---------------------
+    // Velocity Ram ----------------------------------------------
     float velRamp( float velocity, float target );
     unsigned long _VR_lastTime = 0;
 
 
-    // PID ---------------------------------
+    // PID -------------------------------------------------------
     float _Kp = 0.5;
     float _Ki = 0.5;
     float _Kd = 0.5;
@@ -62,12 +64,16 @@ class motor {
 
     float pid(float setPoint, float currentVal);
 
-    // Drive the motor
+    // Drive the motor --------------------------------------------
+    bool  _odomLock = false;
+    float _odomStart;
+    float _odomTarget;
     float _diff = 0;
     float _current_omega = 0;
+    float _thataStart;
+    
     void setMotor(float target);
 
 };
-
 
 #endif
