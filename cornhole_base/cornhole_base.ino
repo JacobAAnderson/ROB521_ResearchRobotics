@@ -3,63 +3,50 @@
  * 
  */
 
-
-
 // Libraries -----------------------------
 #include <avr/wdt.h>                    // Watch dog timer library
-#include "pid.h"
 #include "motor.h"
-
-// Constants -----------------------------
-#define WHEEL_ENCODER_INC  0.00225      // Drive wheel encoder step   [rad]
-#define ARM_ENCODER_INC    0.0123      // Arm encoder step           [rad]   0.00744 
-#define DRIVE_WHEEL_RADIUS 0.076        // Radius of the drive wheel  [m]
-#define ARM_RADIUS         0.254
-#define MAX_ALPHA          0.25         // Max Motor acceleration     [rad/s^2]
-#define MAX_DRIVE_OMEGA    1.9          // Max Drving motor velocity  [rad/s]
-#define MAX_ARM_OMEGA     35.6047167    // Max Thowing motor velocity [rad/s]
-#define ARM_GEAR_RATIO     0.941176     // 16/17 Gear Ratio
-// I/O Pins-------------------------------
-
-#define PIN_ARM_DIR  9
-#define PIN_ARM_PWM  8
-
-#define PIN_LEFT_DIR  10
-#define PIN_LEFT_PWM  11
-
-#define PIN_RIGHT_DIR 13 
-#define PIN_RIGHT_PWM 12
-
-#define PIN_ODOM_WHEEL_A 3
-#define PIN_ODOM_WHEEL_B 2
-
-#define PIN_ODOM_LEFT_A  21
-#define PIN_ODOM_LEFT_B  20
-
-#define PIN_ODOM_RIGHT_A 19
-#define PIN_ODOM_RIGHT_B 18
+#include "rc.h"
+#include "deffs.h"
+#include <Servo.h>
+//#include "pid.h"
 
 
+enum STATE {  // Sate machine for operating the robot
+  drive,      // Automomous Driving
+  aim,        // Autonomous Aiming
+  shoot,      // Autonomous Throwing
+  teleop,     // Human tele-operation
+  e_stop      // Saft State where everything stops moving
+};
+
+
+STATE state;
 
 // Set up motors --------------------------
 motor throwingMotor(PIN_ARM_PWM,     PIN_ARM_DIR);
-//motor leftDriveMotor(PIN_LEFT_PWM,  PIN_LEFT_DIR);
-//motor rightDriveMotor(PIN_RIGHT_PWM, PIN_RIGHT_DIR);
+motor leftDriveMotor(PIN_LEFT_PWM,  PIN_LEFT_DIR);
+motor rightDriveMotor(PIN_RIGHT_PWM, PIN_RIGHT_DIR);
 
-
+Servo triger;
 
 //=================================================================================================================
 void setup(){
 
   Serial.begin(9600);
+  beginRC();
+
+  triger.attach(PIN_SERVO);
+  triger.write(175);
+  
+  state = e_stop;
  
   // Set Up Encoders ---------------------------------------------------------------
-
   throwingMotor.encoder( PIN_ODOM_WHEEL_A, PIN_ODOM_WHEEL_B, ARM_ENCODER_INC  );
   attachInterrupt(digitalPinToInterrupt(PIN_ODOM_WHEEL_A),  TM_int, CHANGE);
   attachInterrupt(digitalPinToInterrupt(PIN_ODOM_WHEEL_B),  TM_int, CHANGE);
   throwingMotor.dir = -1;
-/*
+
   leftDriveMotor.encoder( PIN_ODOM_LEFT_A, PIN_ODOM_LEFT_B, WHEEL_ENCODER_INC  );
   attachInterrupt(digitalPinToInterrupt(PIN_ODOM_LEFT_A),  LM_int, CHANGE);
   attachInterrupt(digitalPinToInterrupt(PIN_ODOM_LEFT_B),  LM_int, CHANGE);
@@ -68,12 +55,21 @@ void setup(){
   attachInterrupt(digitalPinToInterrupt(PIN_ODOM_RIGHT_A),  RM_int, CHANGE);
   attachInterrupt(digitalPinToInterrupt(PIN_ODOM_RIGHT_B),  RM_int, CHANGE);
   rightDriveMotor.dir = -1;
-*/
+
   // Se Up PID controls -----------------------------------------------------------
   throwingMotor.setPID( 0.2, 0.01, 0.01);
-//  leftDriveMotor.setPID( 0.2, 0.05, 0.05);
-//  rightDriveMotor.setPID( 0.2, 0.05, 0.05);
-  
+  leftDriveMotor.setPID(  1, 0.001, 0.02);
+  rightDriveMotor.setPID( 1, 0.001, 0.02);
+
+  // Set up motor constriants -----------------------------------------------------
+  leftDriveMotor.maxAlpha  = 4.0;   // Max angular acceleration
+  rightDriveMotor.maxAlpha = 4.0;
+  throwingMotor.maxAlpha   = 2.0;
+
+  leftDriveMotor.maxVel  = 251.0 * RPM_RADS;  // Mav Angular Velocity
+  rightDriveMotor.maxVel = 251.0 * RPM_RADS;
+  throwingMotor.maxVel   = 340.0 * RPM_RADS;
+ 
   // Set up Watch dog timer -------------------------------------------------------
   cli();        // disable all interrupts 
   wdt_reset();  // reset the WDT timer 
@@ -88,16 +84,66 @@ void setup(){
  }
 
 // ISR functions ---------------------------------------
- void TM_int(){throwingMotor.updateOdom();}
-// void LM_int(){leftDriveMotor.updateOdom();}
-// void RM_int(){rightDriveMotor.updateOdom();}
+void TM_int(){throwingMotor.updateOdom();}
+void LM_int(){leftDriveMotor.updateOdom();}
+void RM_int(){rightDriveMotor.updateOdom();}
 
 // Main ---------------------------------------------------  
  void loop() {
 
   wdt_reset();     // Reset Watch dog timer
+  
+  updateRC();
+  if(rc.io) state = teleop;
+  
+  switch(state){
 
-  throwingMotor.angular_speed(4*PI / ARM_GEAR_RATIO);  // Set motor to 10 rad/s
-//  leftDriveMotor.angular_speed(2*PI );
-//  rightDriveMotor.angular_speed(-2*PI );
+    case teleop:
+    Serial.println("\nTele - Op");
+        if(rc.io){
+          throwingMotor.angular_speed(rc.motor3 );
+          leftDriveMotor.angular_speed(rc.motor1 );
+          rightDriveMotor.angular_speed(rc.motor2);
+
+          if(rc.trig) triger.write(135);
+          else triger.write(175); 
+        }
+        else state = e_stop;            
+        
+        break;
+
+    case e_stop:
+    Serial.println("\nE-Stop");
+        throwingMotor.angular_speed(0 );
+        leftDriveMotor.angular_speed(0 );
+        rightDriveMotor.angular_speed(0);
+ //       state = aim;
+        break;
+           
+    case aim:
+    Serial.println("\nAim");
+        triger.write(175);
+//        throwingMotor.to_theta(0);
+        leftDriveMotor.to_theta(20* PI/180);
+        rightDriveMotor.to_theta(-20* PI/180);
+        break;
+
+    case shoot:
+    Serial.println("\nShoot");
+        throwingMotor.angular_speed(0 );
+        leftDriveMotor.angular_speed(0 );
+        rightDriveMotor.angular_speed(0);
+        triger.write(135);
+        break;
+
+    case drive:
+    Serial.println("\nDrive");
+        break;
+
+    default:
+      Serial.println("\n\n\nI CANT DO IT !!!!!!!@\n\n\n");
+      state = e_stop;
+    }
+    
+ 
   }
