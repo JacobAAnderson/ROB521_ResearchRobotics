@@ -14,9 +14,7 @@ motor::motor(int pwmPin, int dirPin){
           
           _coms = singleMag;
         }
-        
     else _coms = locked_antiphase;
-
 }
 
 
@@ -55,19 +53,22 @@ bool motor::to_theta(float theta){
                 }
                 
   float current = odom - _odomStart;      // Calculate relative angle
-
+/*
   Serial.print("Ref Angle: ");
   Serial.println(_odomStart);
   Serial.print("Odom: ");
   Serial.println(odom);
   Serial.print("Current Angle: ");
   Serial.println(current);
+*/
     
   if (abs(current - theta) <= 0.017 ){        //Check for Goal
       _odomLock = false;
+      /*
      Serial.println("\n\n\n\n\n\n");
      Serial.println(millis()*0.001);
      Serial.println("\n\n\n\n\n\n");
+      */
       return true;
       }
   
@@ -107,9 +108,8 @@ void motor::updateOdom(){
 // Set motor with feedback --------------------------------------------------------
 void motor::setMotor(float target){
 
-  
   if( _useEncoder ){ float actualSpeed = UpDateVelocities();
-                     _diff += target - actualSpeed;
+                     _diff += 0.5*(target - actualSpeed);
                      target = _diff;
                     } 
 
@@ -172,15 +172,15 @@ float motor::velRamp( float velocity, float target ) { // Velocity Ramp function
 
  // Debugging----------------------------------------
   Serial.print("\nVelocity: "), Serial.print(velocity);
-  Serial.print("\tTarget: "), Serial.println(target);
-  Serial.print("dT: "), Serial.print(dt,6);
-  Serial.print("\tStep: "), Serial.print(Step);
-  Serial.print("\tError: "), Serial.println(error);
+  Serial.print("\tTarget: "),   Serial.println(target);
+  Serial.print("dT: "),         Serial.print(dt,6);
+  Serial.print("\tStep: "),     Serial.print(Step);
+  Serial.print("\tError: "),    Serial.println(error);
 
 
   if (abs(Step) > abs(error)) return target;      // If the distance to he target velocity is less than the step size return the target velocity
   
-  if (velocity < target) sign = 1;                // Calculate the direction of the velocity step
+  if (velocity < target) sign = 1.0;                // Calculate the direction of the velocity step
 
 //  Serial.println(sign);
 //  Serial.println(velocity + sign * Step);
@@ -197,7 +197,7 @@ float motor::pid(float setPoint, float currentVal){
 
   float err = setPoint - currentVal ;
 
-  if( isnan(err)) return 0;
+  if( isnan(err)) return 0.0;
   
   _integral   = _integral + err * dt;
   

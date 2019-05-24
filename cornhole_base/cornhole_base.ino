@@ -8,6 +8,7 @@
 #include "motor.h"
 #include "rc.h"
 #include "deffs.h"
+#include <Servo.h>
 //#include "pid.h"
 
 
@@ -27,11 +28,16 @@ motor throwingMotor(PIN_ARM_PWM,     PIN_ARM_DIR);
 motor leftDriveMotor(PIN_LEFT_PWM,  PIN_LEFT_DIR);
 motor rightDriveMotor(PIN_RIGHT_PWM, PIN_RIGHT_DIR);
 
+Servo triger;
+
 //=================================================================================================================
 void setup(){
 
   Serial.begin(9600);
   beginRC();
+
+  triger.attach(PIN_SERVO);
+  triger.write(175);
   
   state = e_stop;
  
@@ -55,6 +61,14 @@ void setup(){
   leftDriveMotor.setPID(  1, 0.001, 0.02);
   rightDriveMotor.setPID( 1, 0.001, 0.02);
 
+  // Set up motor constriants -----------------------------------------------------
+  leftDriveMotor.maxAlpha  = 4.0;   // Max angular acceleration
+  rightDriveMotor.maxAlpha = 4.0;
+  throwingMotor.maxAlpha   = 2.0;
+
+  leftDriveMotor.maxVel  = 251.0 * RPM_RADS;  // Mav Angular Velocity
+  rightDriveMotor.maxVel = 251.0 * RPM_RADS;
+  throwingMotor.maxVel   = 340.0 * RPM_RADS;
  
   // Set up Watch dog timer -------------------------------------------------------
   cli();        // disable all interrupts 
@@ -87,9 +101,12 @@ void RM_int(){rightDriveMotor.updateOdom();}
     case teleop:
     Serial.println("\nTele - Op");
         if(rc.io){
-          throwingMotor.angular_speed(rc.motor1 );
-          leftDriveMotor.angular_speed(rc.motor2 );
-          rightDriveMotor.angular_speed(rc.motor3);
+          throwingMotor.angular_speed(rc.motor3 );
+          leftDriveMotor.angular_speed(rc.motor1 );
+          rightDriveMotor.angular_speed(rc.motor2);
+
+          if(rc.trig) triger.write(135);
+          else triger.write(175); 
         }
         else state = e_stop;            
         
@@ -105,6 +122,7 @@ void RM_int(){rightDriveMotor.updateOdom();}
            
     case aim:
     Serial.println("\nAim");
+        triger.write(175);
 //        throwingMotor.to_theta(0);
         leftDriveMotor.to_theta(20* PI/180);
         rightDriveMotor.to_theta(-20* PI/180);
@@ -115,6 +133,7 @@ void RM_int(){rightDriveMotor.updateOdom();}
         throwingMotor.angular_speed(0 );
         leftDriveMotor.angular_speed(0 );
         rightDriveMotor.angular_speed(0);
+        triger.write(135);
         break;
 
     case drive:

@@ -14,10 +14,10 @@ class motor {
 
   public:
     // Vars-------------------------------------
-    float maxAlpha = 1;
-    float maxVel = 10;
-    float omega = 0;
-    float odom = 0;
+    float maxAlpha = 1.0;
+    float maxVel = 10.0;
+    float omega = 0.0;
+    float odom = 0.0;
     int dir = 1;
 
     // Functions -------------------------------
@@ -37,15 +37,16 @@ class motor {
 
     // Encoder -------------------------------------------------
     bool _useEncoder = false;
-//    static motor * object;
     int _chA;
     int _chB;
-    float _encodInc;
     int _New = 0;
     unsigned long _UPV_lastTime = 0;
-    float _lastOdom = 0; 
+    float _lastOdom = 0.0; 
+    float _encodInc;
    
     float UpDateVelocities();
+    
+//    static motor * object;
 //    static void callBackGlue();
     
     
@@ -58,8 +59,8 @@ class motor {
     float _Kp = 0.5;
     float _Ki = 0.5;
     float _Kd = 0.5;
-    float _error = 0;
-    float _integral = 0;
+    float _error = 0.0;
+    float _integral = 0.0;
     unsigned long _pid_lastTime = 0;
 
     float pid(float setPoint, float currentVal);
@@ -68,8 +69,8 @@ class motor {
     bool  _odomLock = false;
     float _odomStart;
     float _odomTarget;
-    float _diff = 0;
-    float _current_omega = 0;
+    float _diff = 0.0;
+    float _current_omega = 0.0;
     float _thataStart;
     
     void setMotor(float target);
