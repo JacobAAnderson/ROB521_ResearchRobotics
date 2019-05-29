@@ -83,8 +83,7 @@ void updateRC(){
 
     else if (ch =='\n'){  // End of mesage
       Parce_Msg();
-      ii = 0;
-      break; 
+      ii = 0; 
       }
 
     else if( isAlphaNumeric(ch) || isPunct(ch)){ // Add info to  mesage

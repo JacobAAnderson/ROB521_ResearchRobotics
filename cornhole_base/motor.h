@@ -1,8 +1,6 @@
 #ifndef motor_h
 #define motor_h
 
-//#include "pid.h"
-//#include <Encoder.h>
 
 enum motorComs {    // Types of communication with motor controller
   singleMag,        // Analog pwm with a direction inidator pin

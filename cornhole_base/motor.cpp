@@ -1,9 +1,8 @@
 #include "motor.h"
 #include "Arduino.h"
-//#include "pid.h"
-//#include <Encoder.h>
 
-// Instanciate the motor class -------------------------------------
+
+//__ Constructor _____________________________________________________________________________
 motor::motor(int pwmPin, int dirPin){
     _pwmPin = pwmPin;                 // Assign PWM pin
     pinMode(pwmPin, OUTPUT);
@@ -18,6 +17,7 @@ motor::motor(int pwmPin, int dirPin){
 }
 
 
+//___ Srt PID gains ________________________________________________________________________
 void motor::setPID(float Kp, float Ki, float Kd){
   _Kp = Kp;
   _Ki = Ki;
@@ -25,7 +25,7 @@ void motor::setPID(float Kp, float Ki, float Kd){
   }
 
 
-// Enable use of encoder ----------------------------------------------
+//___ Enable use of encoder _________________________________________________________________
 void motor::encoder(int chA, int chB, float encodInc){
   _useEncoder = true;
   _encodInc = encodInc;
@@ -39,12 +39,14 @@ void motor::encoder(int chA, int chB, float encodInc){
 }
 
 
+//___ Set motor to a certain angular velocity ______________________________________________
 void motor::angular_speed(float target_omega){  
   _current_omega = velRamp( _current_omega, target_omega );
   setMotor( _current_omega );      
 }
 
 
+//__ Set motors to a certain angle __________________________________________________________
 bool motor::to_theta(float theta){
 
   if(!_odomLock){ _odomStart = odom;      // Lock in our freferance points
@@ -53,7 +55,9 @@ bool motor::to_theta(float theta){
                 }
                 
   float current = odom - _odomStart;      // Calculate relative angle
+
 /*
+  // Debugging----------------------------------------
   Serial.print("Ref Angle: ");
   Serial.println(_odomStart);
   Serial.print("Odom: ");
@@ -64,11 +68,12 @@ bool motor::to_theta(float theta){
     
   if (abs(current - theta) <= 0.017 ){        //Check for Goal
       _odomLock = false;
-      /*
+/*
+     // Debugging----------------------------------------
      Serial.println("\n\n\n\n\n\n");
      Serial.println(millis()*0.001);
      Serial.println("\n\n\n\n\n\n");
-      */
+*/
       return true;
       }
   
@@ -78,7 +83,7 @@ bool motor::to_theta(float theta){
 }
 
 
-// Read Encoders -----------------------------------------------------------------
+//___ Read Encoders ___________________________________________________________________________
 void motor::updateOdom(){ 
   
   int QEM [16] = {0,-1,1,2,1,0,2,-1,-1,2,0,1,2,1,-1,0};
@@ -91,6 +96,7 @@ void motor::updateOdom(){
   odom += dir * Out *  _encodInc;
 
 /*
+  // Debugging----------------------------------------
   Serial.println(_chA);
   Serial.println(_chB);
   Serial.println(digitalRead (_chA));
@@ -105,11 +111,11 @@ void motor::updateOdom(){
 ===================================================================================
 ================================================================================*/
 
-// Set motor with feedback --------------------------------------------------------
+//___ Set motor with feedback ____________________________________________________________________
 void motor::setMotor(float target){
 
   if( _useEncoder ){ float actualSpeed = UpDateVelocities();
-                     _diff += 0.5*(target - actualSpeed);
+                     _diff += 1.0*(target - actualSpeed);
                      target = _diff;
                     } 
 
@@ -125,6 +131,7 @@ void motor::setMotor(float target){
     digitalWrite(_dirPin,dir);
     analogWrite(_pwmPin,signal);
 /*
+    // Debugging----------------------------------------
     Serial.print("Speed: ");
     Serial.println(target);
     Serial.print("micro: ");
@@ -136,7 +143,7 @@ void motor::setMotor(float target){
     }
 }
 
-// Update Velocity ---------------------------------------------------------------
+//___ Update Velocity _____________________________________________________
 float motor::UpDateVelocities(){
   
   float dt = (millis() - _UPV_lastTime) * 0.001;
@@ -146,7 +153,8 @@ float motor::UpDateVelocities(){
 
   _lastOdom  = odom;
 
-  
+/*  
+  // Debugging----------------------------------------
   Serial.print("Odom: ");
   Serial.print(odom/(2*PI));
   Serial.print(" [rad]      Vel:  ");
@@ -154,12 +162,12 @@ float motor::UpDateVelocities(){
   Serial.print(" [rad/s]      ");
   Serial.print(omega/(2*PI));
   Serial.println(" [RPS]");
- 
+*/ 
   return omega;
 }
 
 
-// Velocity Ramper -------------------------------------------------------------------------------------------------
+//___ Velocity Ramper _____________________________________________________________________________________
 float motor::velRamp( float velocity, float target ) { // Velocity Ramp function --> Called in Drive()
 
   float dt = (millis() - _VR_lastTime) * 0.001;
@@ -170,26 +178,24 @@ float motor::velRamp( float velocity, float target ) { // Velocity Ramp function
   float Step = maxAlpha * dt;       // Calculate step size
   float error = velocity - target;   // Calculate the difference between the target velocity and the current velocity
 
- // Debugging----------------------------------------
+/*
+  // Debugging----------------------------------------
   Serial.print("\nVelocity: "), Serial.print(velocity);
   Serial.print("\tTarget: "),   Serial.println(target);
   Serial.print("dT: "),         Serial.print(dt,6);
   Serial.print("\tStep: "),     Serial.print(Step);
   Serial.print("\tError: "),    Serial.println(error);
-
+*/
 
   if (abs(Step) > abs(error)) return target;      // If the distance to he target velocity is less than the step size return the target velocity
   
   if (velocity < target) sign = 1.0;                // Calculate the direction of the velocity step
 
-//  Serial.println(sign);
-//  Serial.println(velocity + sign * Step);
-
   return velocity + sign * Step;
   
 }
 
-// PID -------------------------------------------------------------------------------
+//___ PID ________________________________________________________________________________
 float motor::pid(float setPoint, float currentVal){
 
   float dt = (millis() - _pid_lastTime) * 0.001;
@@ -205,6 +211,7 @@ float motor::pid(float setPoint, float currentVal){
 
   _error = err;
 
+/*
   // Debugging----------------------------------------
   Serial.print("\nPID Set: ");
   Serial.println(setPoint);
@@ -219,11 +226,11 @@ float motor::pid(float setPoint, float currentVal){
   Serial.print("PID out:  ");
   Serial.println(_Kp*err + _Ki *_integral + _Kd * derivative);
   Serial.println( );
-  
+*/  
   return _Kp*err + _Ki *_integral + _Kd * derivative;
 }
 
-// ISR Stuff --------------------------------------------------------------------
+//___ ISR Stuff ______________________________________________________________
 /*
 motor * motor::object;
 void motor::callBackGlue(){object->updateOdom(); };

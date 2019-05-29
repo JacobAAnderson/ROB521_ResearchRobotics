@@ -1,10 +1,17 @@
 /*   NOTES:
- *    Gear ratio for throwing arm: motor:17  arm:16
- * 
+ *      Gear ratio for throwing arm: motor:17  arm:16
+ *    
+ *   Run the ROS Serial Node: 
+ *      rosrun rosserial_arduino serial_node.py _port:=/dev/ttyACM0
  */
 
 // Libraries -----------------------------
 #include <avr/wdt.h>                    // Watch dog timer library
+#include <ArduinoHardware.h>
+#include <ros.h>
+#include <ros/time.h>
+#include <geometry_msgs/Point.h>
+#include <std_msgs/String.h>
 #include "motor.h"
 #include "rc.h"
 #include "deffs.h"
@@ -20,6 +27,18 @@ enum STATE {  // Sate machine for operating the robot
   e_stop      // Saft State where everything stops moving
 };
 
+char hello[50];
+
+// ROS Stuff ------------------------------------------------------------
+ros::NodeHandle      nh;
+geometry_msgs::Point target;
+std_msgs::String     str_msg;
+// CallBack Functions
+void targetCallBack(const geometry_msgs::Point& msg) {target = msg;}
+
+ros::Subscriber <geometry_msgs::Point> sub("/target", targetCallBack);
+ros::Publisher chatter("arduino_debug", &str_msg);
+// -----------------------------------------------------------------------
 
 STATE state;
 
@@ -29,6 +48,8 @@ motor leftDriveMotor(PIN_LEFT_PWM,  PIN_LEFT_DIR);
 motor rightDriveMotor(PIN_RIGHT_PWM, PIN_RIGHT_DIR);
 
 Servo triger;
+
+
 
 //=================================================================================================================
 void setup(){
@@ -69,7 +90,16 @@ void setup(){
   leftDriveMotor.maxVel  = 251.0 * RPM_RADS;  // Mav Angular Velocity
   rightDriveMotor.maxVel = 251.0 * RPM_RADS;
   throwingMotor.maxVel   = 340.0 * RPM_RADS;
- 
+
+  // Set up ROS Node --------------------------------------------------------------
+  target.x = 0.0;
+  target.y = 0.0;
+  target.z = 0.0;
+  
+  nh.initNode();
+  nh.subscribe(sub);
+  nh.advertise(chatter);
+
   // Set up Watch dog timer -------------------------------------------------------
   cli();        // disable all interrupts 
   wdt_reset();  // reset the WDT timer 
@@ -87,6 +117,7 @@ void setup(){
 void TM_int(){throwingMotor.updateOdom();}
 void LM_int(){leftDriveMotor.updateOdom();}
 void RM_int(){rightDriveMotor.updateOdom();}
+
 
 // Main ---------------------------------------------------  
  void loop() {
@@ -144,6 +175,23 @@ void RM_int(){rightDriveMotor.updateOdom();}
       Serial.println("\n\n\nI CANT DO IT !!!!!!!@\n\n\n");
       state = e_stop;
     }
-    
+
+  float xx = target.x;
+  float yy = target.y; 
+  float zz = target.z;  
+
+  char buff1[10];
+  dtostrf(xx, 2,2, buff1);
+
+  char buff2[10];
+  dtostrf(yy, 2,2, buff2);
+
+  char buff3[10];
+  dtostrf(zz, 2,2, buff3);
  
+  sprintf(hello,"Target: %s, %s, %s", buff1, buff2, buff3);
+  str_msg.data = hello; // buff1;
+  chatter.publish( &str_msg );
+
+  nh.spinOnce();
   }
