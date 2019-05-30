@@ -9,7 +9,6 @@ typedef struct {
   float motor2;
   float motor3;
   char msg[60];
-  int FailRc;
 } RC;
 
 RC rc;
@@ -21,7 +20,6 @@ void beginRC(){
   rc.motor1 = 0.0;
   rc.motor2 = 0.0;
   rc.motor3 = 0.0;
-  rc.FailRc = 25;
   }
 
 
@@ -71,7 +69,6 @@ void Parce_Msg(){
 
 // Read serial mesage from RC controler -------------------------------------------------------
 void updateRC(){
-  rc.FailRc = 25;
 
   static int ii = 0;
   while(Serial3.available()){
@@ -86,8 +83,7 @@ void updateRC(){
 
     else if (ch =='\n'){  // End of mesage
       Parce_Msg();
-      ii = 0;
-      break; 
+      ii = 0; 
       }
 
     else if( isAlphaNumeric(ch) || isPunct(ch)){ // Add info to  mesage

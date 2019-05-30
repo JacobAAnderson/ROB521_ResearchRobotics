@@ -7,11 +7,12 @@
 
 // Libraries -----------------------------
 #include <avr/wdt.h>                    // Watch dog timer library
-//#include <ArduinoHardware.h>
-//#include <ros.h>
-//#include <ros/time.h>
-//#include <geometry_msgs/Point.h>
-//#include <std_msgs/String.h>
+#include <ArduinoHardware.h>
+#include <ros.h>
+#include <ros/time.h>
+#include <geometry_msgs/Point.h>
+#include <std_msgs/String.h>
+#include <math.h>
 #include "motor.h"
 #include "rc.h"
 #include "deffs.h"
@@ -29,7 +30,7 @@ enum STATE {  // Sate machine for operating the robot
 
 char hello[50];
 
-/*/ ROS Stuff ------------------------------------------------------------
+// ROS Stuff ------------------------------------------------------------
 ros::NodeHandle      nh;
 geometry_msgs::Point target;
 std_msgs::String     str_msg;
@@ -39,7 +40,7 @@ void targetCallBack(const geometry_msgs::Point& msg) {target = msg;}
 ros::Subscriber <geometry_msgs::Point> sub("/target", targetCallBack);
 ros::Publisher chatter("arduino_debug", &str_msg);
 // -----------------------------------------------------------------------
-*/
+
 STATE state;
 
 // Set up motors --------------------------
@@ -91,15 +92,15 @@ void setup(){
   rightDriveMotor.maxVel = 251.0 * RPM_RADS;
   throwingMotor.maxVel   = 340.0 * RPM_RADS;
 
-  /*/ Set up ROS Node --------------------------------------------------------------
-  target.x = 0.0;
-  target.y = 0.0;
-  target.z = 0.0;
+  // Set up ROS Node --------------------------------------------------------------
+  target.x = -1.0;
+  target.y = -1.0;
+  target.z = -1.0;
   
   nh.initNode();
   nh.subscribe(sub);
   nh.advertise(chatter);
-*/
+
   // Set up Watch dog timer -------------------------------------------------------
   cli();        // disable all interrupts 
   wdt_reset();  // reset the WDT timer 
@@ -121,23 +122,20 @@ void RM_int(){rightDriveMotor.updateOdom();}
 
 // Main ---------------------------------------------------  
  void loop() {
-rc.io = false;
-  //Serial.flush();
+
   wdt_reset();     // Reset Watch dog timer
   
   updateRC();
   if(rc.io) state = teleop;
+  
+  double theta;
+  double Vo;
   
   switch(state){
 
     case teleop:
     Serial.println("\nTele - Op");
         if(rc.io && rc.FailRc>0){
-          Serial.println("motor val 1: ");
-          Serial.println(rc.motor1);
-          Serial.println("  2:  ");
-          Serial.println(rc.motor2);
-          Serial.println("\n");
 
           if(rc.motor3<10) rc.motor3 = 0;
           
@@ -147,11 +145,7 @@ rc.io = false;
 
           if(rc.trig){ 
             triger.write(135);
-            //delay(100);  //wait for servo to get in pos
-            //delay(100); //release one before slowdown
-            //if(rc.motor3!=0)throwingMotor.tele(-(rc.motor3-20));  //shutdown
-            //delay(200);
-            Serial.flush();
+            //Serial.flush();
           }
           else triger.write(175); 
         }
@@ -159,7 +153,7 @@ rc.io = false;
         
         break;
 
-    /*case e_stop:
+    case e_stop:
     Serial.println("\nE-Stop");
         throwingMotor.angular_speed(0 );
         leftDriveMotor.angular_speed(0 );
@@ -170,31 +164,42 @@ rc.io = false;
     case aim:
     Serial.println("\nAim");
         triger.write(175);
-//        throwingMotor.to_theta(0);
-        leftDriveMotor.to_theta(20* PI/180);
-        rightDriveMotor.to_theta(-20* PI/180);
+
+        theta = atan2(target.y, target.x);
+        theta = theta * ROBOT_BASE_WIDTH /(2 * DRIVE_WHEEL_RADIUS);
+        
+        leftDriveMotor.to_theta(-theta);
+        rightDriveMotor.to_theta(theta);
+
+        Vo = sqrt(abs(g * target.x * target.x /
+                            (2 * ( target.y * cos( THROW_ANGLE)*cos( THROW_ANGLE) - target.x * cos( THROW_ANGLE) * sin( THROW_ANGLE)))));
+
+        throwingMotor.angular_speed( Vo/ARM_RADIUS );
+
+        if(abs(theta) <= ONE_DEG_IN_RAD && abs( throwingMotor.omega - Vo/ARM_RADIUS ) <= 1) state = shoot; 
         break;
 
     case shoot:
-    Serial.println("\nShoot");
-        throwingMotor.angular_speed(0 );
+    Serial.println("\nShooting");
+        throwingMotor.angular_speed(Vo/ARM_RADIUS );
         leftDriveMotor.angular_speed(0 );
         rightDriveMotor.angular_speed(0);
         triger.write(135);
+
+        theta = atan2(target.y, target.x);
+        if(abs(theta) > ONE_DEG_IN_RAD && abs( throwingMotor.omega - Vo/ARM_RADIUS ) > 1) state = aim;        
         break;
 
     case drive:
     Serial.println("\nDrive");
         break;
-        */
 
     default:
-      triger.write(175); 
       Serial.println("\n\n\nI CANT DO IT !!!!!!!@\n\n\n");
       state = e_stop;
     }
 
-  /*float xx = target.x;
+  float xx = target.x;
   float yy = target.y; 
   float zz = target.z;  
 
@@ -207,11 +212,9 @@ rc.io = false;
   char buff3[10];
   dtostrf(zz, 2,2, buff3);
  
-  //sprintf(hello,"Target: %s, %s, %s", buff1, buff2, buff3);
-  //str_msg.data = hello; // buff1;
-  //chatter.publish( &str_msg );
+  sprintf(hello,"Target: %s, %s, %s", buff1, buff2, buff3);
+  str_msg.data = hello; // buff1;
+  chatter.publish( &str_msg );
 
-  //nh.spinOnce();
-*/
-  throwingMotor.UpDateVelocities();
+  nh.spinOnce();
   }

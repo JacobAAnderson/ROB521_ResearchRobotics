@@ -1,8 +1,6 @@
 #ifndef motor_h
 #define motor_h
 
-//#include "pid.h"
-//#include <Encoder.h>
 
 enum motorComs {    // Types of communication with motor controller
   singleMag,        // Analog pwm with a direction inidator pin
@@ -27,9 +25,8 @@ class motor {
     void setPID(float Kp, float Ki, float Kd);
     void updateOdom();                                  // ISR for encoder
     void angular_speed(float set );                     // Give the motor a speed input
-    bool to_theta(float theta);
-
-    float UpDateVelocities(); //moved
+    bool to_theta(double theta);
+    
 
 
   private:
@@ -47,6 +44,7 @@ class motor {
     float _lastOdom = 0.0; 
     float _encodInc;
    
+    float UpDateVelocities();
     
 //    static motor * object;
 //    static void callBackGlue();
