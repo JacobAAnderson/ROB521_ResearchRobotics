@@ -12,6 +12,7 @@
 #include <ros/time.h>
 #include <geometry_msgs/Point.h>
 #include <std_msgs/String.h>
+#include <math.h>
 #include "motor.h"
 #include "rc.h"
 #include "deffs.h"
@@ -92,9 +93,9 @@ void setup(){
   throwingMotor.maxVel   = 340.0 * RPM_RADS;
 
   // Set up ROS Node --------------------------------------------------------------
-  target.x = 0.0;
-  target.y = 0.0;
-  target.z = 0.0;
+  target.x = -1.0;
+  target.y = -1.0;
+  target.z = -1.0;
   
   nh.initNode();
   nh.subscribe(sub);
@@ -127,6 +128,9 @@ void RM_int(){rightDriveMotor.updateOdom();}
   updateRC();
   if(rc.io) state = teleop;
   
+  double theta;
+  double Vo;
+  
   switch(state){
 
     case teleop:
@@ -154,17 +158,30 @@ void RM_int(){rightDriveMotor.updateOdom();}
     case aim:
     Serial.println("\nAim");
         triger.write(175);
-//        throwingMotor.to_theta(0);
-        leftDriveMotor.to_theta(20* PI/180);
-        rightDriveMotor.to_theta(-20* PI/180);
+
+        theta = atan2(target.y, target.x);
+        theta = theta * ROBOT_BASE_WIDTH /(2 * DRIVE_WHEEL_RADIUS);
+        
+        leftDriveMotor.to_theta(-theta);
+        rightDriveMotor.to_theta(theta);
+
+        Vo = sqrt(abs(g * target.x * target.x /
+                            (2 * ( target.y * cos( THROW_ANGLE)*cos( THROW_ANGLE) - target.x * cos( THROW_ANGLE) * sin( THROW_ANGLE)))));
+
+        throwingMotor.angular_speed( Vo/ARM_RADIUS );
+
+        if(abs(theta) <= ONE_DEG_IN_RAD && abs( throwingMotor.omega - Vo/ARM_RADIUS ) <= 1) state = shoot; 
         break;
 
     case shoot:
-    Serial.println("\nShoot");
-        throwingMotor.angular_speed(0 );
+    Serial.println("\nShooting");
+        throwingMotor.angular_speed(Vo/ARM_RADIUS );
         leftDriveMotor.angular_speed(0 );
         rightDriveMotor.angular_speed(0);
         triger.write(135);
+
+        theta = atan2(target.y, target.x);
+        if(abs(theta) > ONE_DEG_IN_RAD && abs( throwingMotor.omega - Vo/ARM_RADIUS ) > 1) state = aim;        
         break;
 
     case drive:

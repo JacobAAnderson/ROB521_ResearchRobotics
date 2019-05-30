@@ -24,7 +24,7 @@ class motor {
     void setPID(float Kp, float Ki, float Kd);
     void updateOdom();                                  // ISR for encoder
     void angular_speed(float set );                     // Give the motor a speed input
-    bool to_theta(float theta);
+    bool to_theta(double theta);
 
 
   private:

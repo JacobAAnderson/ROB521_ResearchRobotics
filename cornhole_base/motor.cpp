@@ -47,7 +47,7 @@ void motor::angular_speed(float target_omega){
 
 
 //__ Set motors to a certain angle __________________________________________________________
-bool motor::to_theta(float theta){
+bool motor::to_theta(double theta){
 
   if(!_odomLock){ _odomStart = odom;      // Lock in our freferance points
                   _odomTarget = theta;
