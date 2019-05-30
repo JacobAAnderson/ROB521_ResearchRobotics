@@ -91,7 +91,6 @@ void setup(){
   ArmMotor();
   drives();
   
-  delay(1);
   lastsig --;
   }
 
@@ -152,10 +151,8 @@ void serialcall(int m1,int pwm1,int m2,int pwm2)
   //String lend = "#";
   String value = start + onoff + cma + launch + cma + m1 + cma + m2 + cma + armpwm + '\n';
   strcpy(tempChars, value.c_str());
-  if(onoff == 1){
     Serial.write(tempChars);
     delay(100);
-  }
   //Serial.print(tempChars);
 }
 
@@ -274,7 +271,7 @@ void drives(){
     {
       if(rc_values[RC_CH4]<1500)
       {
-        serialcall(-255,0,255,1);
+        serialcall(-percent*255,0,percent*255,1);
         //reverse1(255);
         //forward2(255);
         return;
@@ -282,7 +279,7 @@ void drives(){
       else
       {
         //checkreverse(1500+throttle,1);
-        serialcall(255,1,-255,0);
+        serialcall(percent*255,1,-percent*255,0);
         //reverse2(255);
         //forward1(255);
         //checkreverse(1500-throttle,2);
@@ -321,7 +318,7 @@ void drives(){
         //reverse2(newthrottle*percent);
       }
       else{
-        serialcall(newthrottle*-1,0,newthrottle*percent*-1,0);
+        serialcall(newthrottle,0,newthrottle*percent,0);
         //forward1(newthrottle);
         //forward2(newthrottle*percent);
       }

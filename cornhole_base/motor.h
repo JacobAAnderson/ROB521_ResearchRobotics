@@ -22,11 +22,14 @@ class motor {
 
     // Functions -------------------------------
     motor(int pwmPin, int dirPin);                      // Construtor
+    void tele(int val);
     void encoder(int chA, int chB,  float encodInc);    // Encoder Steup
     void setPID(float Kp, float Ki, float Kd);
     void updateOdom();                                  // ISR for encoder
     void angular_speed(float set );                     // Give the motor a speed input
     bool to_theta(float theta);
+
+    float UpDateVelocities(); //moved
 
 
   private:
@@ -44,7 +47,6 @@ class motor {
     float _lastOdom = 0.0; 
     float _encodInc;
    
-    float UpDateVelocities();
     
 //    static motor * object;
 //    static void callBackGlue();

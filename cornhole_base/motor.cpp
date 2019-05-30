@@ -17,6 +17,18 @@ motor::motor(int pwmPin, int dirPin){
     else _coms = locked_antiphase;
 }
 
+//New Function for tele
+void motor::tele(int val){
+    //int signal = constrain(val, 0,255);  // Make sure the signal is constrained to viable numbers
+
+    int dir = LOW;
+    if( val < 0 ) dir = HIGH;
+    val = abs(val);
+    
+    digitalWrite(_dirPin,dir);
+    analogWrite(_pwmPin,val);
+}
+
 
 void motor::setPID(float Kp, float Ki, float Kd){
   _Kp = Kp;
@@ -89,7 +101,6 @@ void motor::updateOdom(){
   int Out = QEM [Old * 4 + _New];
 
   odom += dir * Out *  _encodInc;
-
 /*
   Serial.println(_chA);
   Serial.println(_chB);
@@ -145,13 +156,7 @@ float motor::UpDateVelocities(){
   omega = (odom - _lastOdom)/dt;
 
   _lastOdom  = odom;
-
   
-  Serial.print("Odom: ");
-  Serial.print(odom/(2*PI));
-  Serial.print(" [rad]      Vel:  ");
-  Serial.print(omega);
-  Serial.print(" [rad/s]      ");
   Serial.print(omega/(2*PI));
   Serial.println(" [RPS]");
  
@@ -224,7 +229,6 @@ float motor::pid(float setPoint, float currentVal){
 }
 
 // ISR Stuff --------------------------------------------------------------------
-/*
-motor * motor::object;
-void motor::callBackGlue(){object->updateOdom(); };
-*/
+
+//motor * motor::object;
+//void motor::callBackGlue(){object->updateOdom(); };
