@@ -128,7 +128,7 @@ void motor::setMotor(float target){
   
   if( _useEncoder ){ float actualSpeed = UpDateVelocities();
                       if(isnan(_diff)) _diff = 0.0;
-                     _diff = _diff + 0.01*(target-actualSpeed);
+                     _diff = _diff + 0.1*(target-actualSpeed);
                      target = _diff;
   }
 

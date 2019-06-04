@@ -135,8 +135,8 @@ void RM_int(){rightDriveMotor.updateOdom();}
   double theta;
   double Vo;
 
-  float xx = target.x - 1.6; 
-  float yy = target.y - 0.2;//- 0.135; 
+  float xx = target.x - 0.5; 
+  float yy = target.y - 0.0;//- 0.135; 
   float zz = target.z - 0.34;
   char ch_state[8] = "none"; 
 
@@ -162,8 +162,6 @@ void RM_int(){rightDriveMotor.updateOdom();}
             //Serial.flush();
           }
           else triger.write(175); 
-
-          state = e_stop;
         }
         else state = e_stop;
         break;
@@ -202,7 +200,6 @@ void RM_int(){rightDriveMotor.updateOdom();}
 
         Vo = sqrt(abs(g * xx * xx /
                      (2 * ( yy * cos( THROW_ANGLE)*cos( THROW_ANGLE) - xx * cos( THROW_ANGLE) * sin( THROW_ANGLE)))));
-        if(Vo>36.0) Vo = 0.0;
  
         throwingMotor.angular_speed(Vo/ARM_RADIUS);
 
@@ -210,14 +207,14 @@ void RM_int(){rightDriveMotor.updateOdom();}
         rightDriveMotor.angular_speed(0);
         
         //(abs(theta) <= 3*ONE_DEG_IN_RAD)
-        if( -1.5>((Vo/ARM_RADIUS) - throwingMotor.UpDateVelocities()) && 1.5<((Vo/ARM_RADIUS) - throwingMotor.UpDateVelocities() ) ){ 
+        if( -.8>((Vo/ARM_RADIUS) - throwingMotor.UpDateVelocities()) && .8<((Vo/ARM_RADIUS) - throwingMotor.UpDateVelocities() ) ){ 
           triger.write(135);
-          delay(10);
+          delay(50);
           if(count>1000) state = shoot;
           count += 10;
         }
         else{ 
-          triger.write(155);
+          triger.write(160);
           count = 0;
         }
         break;
