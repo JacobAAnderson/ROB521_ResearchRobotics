@@ -204,27 +204,27 @@ public:
 		cv::SimpleBlobDetector::Params params;
 	 
 		// Change thresholds
-		params.minThreshold = 100;
-		params.maxThreshold = 200;
+		params.minThreshold = 100; //100
+		params.maxThreshold = 250; //200
 	 
 		// Filter by Area.
 		params.filterByArea = true;
-		params.minArea = 200;
-		params.maxArea = 350;
+		params.minArea = 110; //200
+		params.maxArea = 320; //350
 	 
 		// Filter by Circularity
 		params.filterByCircularity = true;
-		params.minCircularity = 0.55;
-		params.maxCircularity = 0.75;
+		params.minCircularity = 0.55; //.55
+		params.maxCircularity = 0.85; //.75
 	 
 		// Filter by Convexity
 		params.filterByConvexity = true;
-		params.minConvexity = 0.87;
+		params.minConvexity = 0.87; //.87
 	 
 		// Filter by Inertia
 		params.filterByInertia = true;
-		params.minInertiaRatio = 0.1;
-		params.maxInertiaRatio = 0.4;
+		params.minInertiaRatio = 0.1; //.1
+		params.maxInertiaRatio = 0.4; //.4
 	
 		// Set up the detector with default parameters.
 		cv::Ptr<cv::SimpleBlobDetector> detector = cv::SimpleBlobDetector::create(params);
