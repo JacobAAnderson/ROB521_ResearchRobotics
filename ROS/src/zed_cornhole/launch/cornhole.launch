@@ -1,0 +1,11 @@
+<launch>
+ 
+ <include file= "$(find zed_wrapper)/launch/zed.launch"/>
+ 
+ <node pkg="rosserial_arduino" type="serial_node.py" name="serial_node" output="screen">
+	<param name= "port" type = "string"  value = "/dev/ttyACM0" />
+	</node>
+  
+ <node pkg="zed_cornhole" type="zed_cornhole" name="zed_cornhole" output="screen"/>
+  
+</launch>
